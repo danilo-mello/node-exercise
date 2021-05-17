@@ -10,6 +10,15 @@ exports.getAddProduct = (req, res, next) => {
 }
 
 exports.postAddProduct = (req, res, next) => {
+  if (!errors.isEmpty()) {
+    return res.status(422).render('admin/edit-product', {
+      pageTitle: 'Add Product',
+      path: '/admin',
+      editing: false,
+      errorMessage: errors.array()[0].msg
+    })
+  }
+  
   const product = new Product({
     title: req.body.title,
     price: req.body.price,
@@ -17,9 +26,12 @@ exports.postAddProduct = (req, res, next) => {
     imageUrl: req.body.imageUrl,
     userId: req.user
   })
-  product.save().then(() => {
-    res.redirect('/')
-  }).catch(err => console.log(err))
+  const errors = validationResult(req)
+  if(!errors.isEmpty()){
+    product.save().then(() => {
+      res.redirect('/')
+    }).catch(err => console.log(err))
+  }
 }
 
 exports.getEditProduct = (req, res, next) => {
@@ -46,12 +58,26 @@ exports.postEditProduct = (req, res, next) => {
   const updateDesc = req.body.description
   const updatedImageUrl = req.body.imageUrl
 
+  const errors = validationResult(req)
+
   Product.findById(prodId).then(product => {
+    if (!errors.isEmpty()) {
+      return res.status(422).render('admin/edit-product', {
+        pageTitle: 'Edit Product',
+        path: '/admin',
+        editing: true,
+        product: product,
+        errorMessage: errors.array()[0].msg
+      })
+    }
+
     product.title = updatedTitle,
     product.price = updatedPrice,
     product.description = updateDesc,
     product.imageUrl = updatedImageUrl
+    
     return product.save()
+    
   })
   .then(() => {
     res.redirect('/admin/products')
